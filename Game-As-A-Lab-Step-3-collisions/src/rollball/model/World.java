@@ -1,87 +1,74 @@
 package rollball.model;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-
 import rollball.common.*;
 
-public class World  {
-	
-	private List<PickUpObj> picks;
-	private Ball ball;
-	private RectBoundingBox mainBBox;
-	
-	public World(RectBoundingBox bbox){
-		picks = new ArrayList<PickUpObj>();
-		mainBBox = bbox;
+/**
+ * The World class represents the game world, which contains the ball and pick up objects.
+ * It also manages the boundaries of the game world and detects collisions between the ball and pick up objects.
+ */
+public class World {
+
+	private List<PickUpObj> picks = new ArrayList<>(); // List of pick up objects
+	private Ball ball; // The ball object
+	private RectBoundingBox mainBBox; // The main bounding box
+
+	public World(RectBoundingBox bbox) {
+		mainBBox = bbox; // Initialize the main bounding box
 	}
 
-	public void setBall(Ball ball){
-		this.ball = ball;
+	public void setBall(Ball ball) {
+		this.ball = ball; // Set the ball object
 	}
-	
-	public void addPickUp(PickUpObj obj){
-		picks.add(obj);
+
+	public void addPickUp(PickUpObj obj) {
+		picks.add(obj); // Add a pick up object
 	}
-	
-	public void updateState(int dt){
-		picks.stream().forEach(obj -> { obj.updateState(dt);});
-		ball.updateState(dt);
-		
-		checkBoundaries();
-		checkCollisions();
+
+	public void updateState(int dt) {
+		picks.forEach(obj -> obj.updateState(dt)); // Update state of each pick up object
+		ball.updateState(dt); // Update state of the ball
+
+		checkBoundaries(); // Check if the ball is within the boundaries
+		checkCollisions(); // Check for collisions between the ball and pick up objects
 	}
-	
-	private void checkBoundaries(){
+
+	private void checkBoundaries() {
+		// Check if the ball is within the boundaries and adjust its position and velocity if necessary
 		P2d pos = ball.getCurrentPos();
 		P2d ul = mainBBox.getULCorner();
 		P2d br = mainBBox.getBRCorner();
 		double r = ball.getRadius();
-		if (pos.y + r> ul.y){
-			ball.setPos(new P2d(pos.x, ul.y - r));
-			ball.flipVelOnY();
-		} else if (pos.y - r < br.y){
-			ball.setPos(new P2d(pos.x, br.y + r));
+		if (pos.y + r > ul.y || pos.y - r < br.y) {
+			ball.setPos(new P2d(pos.x, pos.y + r > ul.y ? ul.y - r : br.y + r));
 			ball.flipVelOnY();
 		}
-		if (pos.x + r > br.x){
-			ball.setPos(new P2d(br.x - r, pos.y));
-			ball.flipVelOnX();
-		} else if (pos.x - r < ul.x){
-			ball.setPos(new P2d(ul.x + r, pos.y));
+		if (pos.x + r > br.x || pos.x - r < ul.x) {
+			ball.setPos(new P2d(pos.x + r > br.x ? br.x - r : ul.x + r, pos.y));
 			ball.flipVelOnX();
 		}
 	}
 
-	private void checkCollisions(){
+	private void checkCollisions() {
+		// Check for collisions between the ball and pick up objects and remove the collided pick up object
 		P2d ballpos = ball.getCurrentPos();
 		double radius = ball.getRadius();
-		PickUpObj found = null;
-		for (PickUpObj obj: picks){
-			if (obj.getBBox().isCollidingWith(ballpos,radius)){
-				found = obj;
-				break;
-			}
-		}
-		if (found != null){
-			picks.remove(found);
-		}
+		picks.removeIf(obj -> obj.getBBox().isCollidingWith(ballpos, radius));
 	}
-	
-	public List<GameObject> getSceneEntities(){
-		List<GameObject> entities = new ArrayList<GameObject>();
-		entities.addAll(picks);
+
+	public List<GameObject> getSceneEntities() {
+		// Get a list of all game objects
+		List<GameObject> entities = new ArrayList<>(picks);
 		entities.add(ball);
 		return entities;
 	}
-		
-	public RectBoundingBox getBBox(){
-		return mainBBox;
+
+	public RectBoundingBox getBBox() {
+		return mainBBox; // Get the main bounding box
 	}
-	
-	public Ball getBall(){
-		return ball;
+
+	public Ball getBall() {
+		return ball; // Get the ball object
 	}
 }
